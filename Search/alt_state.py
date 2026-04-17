@@ -5,7 +5,9 @@ from typing import Set, Dict, Optional
 import numpy
 
 from TrafficSimulator import Simulation
-from TrafficSimulator.Setups.two_way_intersection import *
+from TrafficSimulator.Setups.two_way_intersection import (
+    VEHICLE_RATE, PATHS, INTERSECTIONS_DICT
+)
 
 
 class Gstate:

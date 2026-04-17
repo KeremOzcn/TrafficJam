@@ -39,7 +39,8 @@ action_funcs = {'fc': fixed_cycle_action,
 
 
 def default_cycle(n_episodes: int, action_func_name: str, render):
-    print(f"\n -- Running FC for {n_episodes} episodes  -- ")
+    label = 'Fixed Cycle' if action_func_name == 'fc' else 'Longest Queue First'
+    print(f"\n -- Running {label} for {n_episodes} episodes  -- ")
     environment: Environment = Environment()
     total_wait_time, total_collisions = 0, 0
     action_func = action_funcs[action_func_name]

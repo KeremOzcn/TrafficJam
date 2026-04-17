@@ -3,8 +3,6 @@ import random
 import typing
 
 from Search.alt_state import Gstate
-from TrafficSimulator.window import *
-from TrafficSimulator.Setups.two_way_intersection import *
 
 INIT_SOLUTION_5 = [[0, 0, 0, 1, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 1],
                    [1, 0, 0, 0, 0],

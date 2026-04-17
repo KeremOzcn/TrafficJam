@@ -1,7 +1,7 @@
 from ReinforcementLearning import Environment
 from Logic.inference_engine import infer, truth_table
 
-MIN_CYCLE_TIME = 10  # Minimum seconds between signal switches
+MIN_CYCLE_TIME = 5  # Minimum seconds between signal switches
 
 
 def logic_action(sim, state: tuple) -> bool:

@@ -1,0 +1,1 @@
+from Comparison.compare_utils import compare_all

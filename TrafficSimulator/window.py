@@ -30,6 +30,7 @@ METHOD_LABELS = {
     'lqf':       'Longest Queue First',
     'qlearning': 'Q-Learning',
     'search':    'Genetic Algorithm',
+    'mcts':      'MCTS',
     'logic':     'Propositional Logic',
     'math':      'Math Model (LA + Prob)',
     '':          'Unknown',
@@ -79,6 +80,15 @@ class Window:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.closed = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self._sim.paused = not self._sim.paused
+                elif event.key in (pygame.K_PLUS, pygame.K_EQUALS, pygame.K_KP_PLUS):
+                    self._sim.speed_factor = min(8.0,
+                        round(self._sim.speed_factor * 2, 2))
+                elif event.key in (pygame.K_MINUS, pygame.K_KP_MINUS):
+                    self._sim.speed_factor = max(0.25,
+                        round(self._sim.speed_factor / 2, 2))
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == pygame.BUTTON_LEFT:
                     x, y = pygame.mouse.get_pos()
@@ -199,14 +209,26 @@ class Window:
                                       color=color)
 
     def _draw_status(self) -> None:
-        """Minimal top-left overlay kept for backward compatibility."""
+        """Minimal top-left overlay."""
         def render(text, color=(0, 0, 0), bg=CLR_BG):
             return self._text_font.render(text, True, color, bg)
 
         self._screen.blit(render(f'Time: {self._sim.t:.1f}'), (10, 20))
         if self._sim.max_gen:
-            self._screen.blit(
-                render(f'Max Gen: {self._sim.max_gen}'), (10, 50))
+            self._screen.blit(render(f'Max Gen: {self._sim.max_gen}'), (10, 40))
+
+        # Speed / pause indicator
+        if self._sim.paused:
+            pause_surf = self._font_lg.render('  PAUSED  ', True,
+                                              (255, 255, 255), (180, 60, 60))
+            self._screen.blit(pause_surf,
+                               (SIM_WIDTH // 2 - pause_surf.get_width() // 2, 10))
+        else:
+            spd = self._sim.speed_factor
+            spd_str = f'{spd:.2g}x'
+            color = CLR_ACCENT if spd != 1.0 else (80, 80, 80)
+            spd_surf = self._font_sm.render(f'Speed: {spd_str}', True, color, CLR_BG)
+            self._screen.blit(spd_surf, (10, 58))
 
     # ── Dashboard panel ───────────────────────────────────────────────────────
 
@@ -336,6 +358,20 @@ class Window:
         self._panel_text(f'Collisions:  {collisions}',
                          px, y, self._font_sm, col_color)
         y += 22
+
+        self._panel_hline(y); y += 10
+
+        # ── Controls hint ──────────────────────────────────────────────────
+        self._panel_text('CONTROLS', px, y, self._font_hdr, CLR_GREY)
+        y += 18
+        ctrl_color = CLR_YELLOW if self._sim.paused else CLR_GREY
+        pause_txt = 'SPACE: RESUME' if self._sim.paused else 'SPACE: Pause'
+        self._panel_text(pause_txt, px, y, self._font_sm, ctrl_color)
+        y += 16
+        spd = self._sim.speed_factor
+        self._panel_text(f'+/- : Speed  [{spd:.2g}x]', px, y,
+                         self._font_sm, CLR_GREY)
+        y += 20
 
         self._panel_hline(y); y += 10
 

@@ -41,6 +41,10 @@ class Simulation:
             'collisions': 0,
         }
 
+        # UI control state
+        self.paused: bool = False
+        self.speed_factor: float = 1.0   # 1.0 = normal, 2.0 = 2× faster
+
     def add_intersections(self, intersections_dict: Dict[int, Set[int]]) -> None:
         self._intersections.update(intersections_dict)
 
@@ -137,7 +141,8 @@ class Simulation:
         """ Performs n simulation updates. Terminates early upon completion or GUI closing
         :param action: an action from a reinforcement learning environment action space
         """
-        n = 180  # 3 simulation seconds
+        # Apply speed factor: higher = more updates per call
+        n = max(1, int(180 * self.speed_factor))
         if action:
             self._update_signals()
             self._loop(n)
@@ -178,6 +183,9 @@ class Simulation:
     def _loop(self, n: int) -> None:
         """ Performs n simulation updates. Terminates early upon completion or GUI closing"""
         for _ in range(n):
+            # Pause: keep rendering but don't advance simulation
+            while self.paused and self._gui and not self.gui_closed:
+                self._gui.update()
             self.update()
             if self.completed or self.gui_closed:
                 return
@@ -223,7 +231,6 @@ class Simulation:
                     next_road_index = lead.path[lead.current_road_index]
                     new_non_empty_roads.add(next_road_index)
                     self.roads[next_road_index].vehicles.append(lead)
-                    # road.vehicles.popleft()
                     if not road.vehicles:
                         new_empty_roads.add(road.index)
                 else:

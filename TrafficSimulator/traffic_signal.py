@@ -5,7 +5,6 @@ class TrafficSignal:
     def __init__(self, roads: List[List], cycle: List[Tuple],
                  slow_distance: float, slow_factor: float, stop_distance: float):
         self.roads: List[List] = roads
-        # self.roads_indexes: Set[int] = set(road.index for road in chain.from_iterable(roads))
         self.cycle: List[Tuple[bool]] = cycle
         self.current_cycle_index = 0
         self.slow_distance: float = slow_distance
