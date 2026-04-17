@@ -137,6 +137,35 @@ class Simulation:
             self._gui = Window(self)
         self._gui.update()
 
+    def run_with_actions(self, switch_mask) -> None:
+        """
+        Multi-signal selective switching for multi-intersection control.
+
+        switch_mask[i] = True  → traffic_signals[i] advances its cycle
+                       = False → that signal is held
+
+        Mirrors the yellow-phase structure of run(): two signal updates
+        bracket a simulation loop so the yellow phase is visually shown.
+        """
+        n = max(1, int(180 * self.speed_factor))
+        any_switch = any(switch_mask)
+
+        if any_switch:
+            for i, sw in enumerate(switch_mask):
+                if sw and i < len(self.traffic_signals):
+                    self.traffic_signals[i].update()
+            if self._gui:
+                self._gui.update()
+            self._loop(n)
+            if self.collision_detected or self.gui_closed:
+                return
+            for i, sw in enumerate(switch_mask):
+                if sw and i < len(self.traffic_signals):
+                    self.traffic_signals[i].update()
+            if self.completed or self.gui_closed:
+                return
+        self._loop(n)
+
     def run(self, action: Optional[int] = None) -> None:
         """ Performs n simulation updates. Terminates early upon completion or GUI closing
         :param action: an action from a reinforcement learning environment action space
@@ -176,19 +205,25 @@ class Simulation:
         # Increment time
         self.t += self.dt
 
-        # Update the display
-        if self._gui:
-            self._gui.update()
-
     def _loop(self, n: int) -> None:
         """ Performs n simulation updates. Terminates early upon completion or GUI closing"""
-        for _ in range(n):
+        import pygame
+        # Render ~60 frames per loop regardless of speed_factor
+        render_every = max(1, n // 60)
+        # Delay per render frame to slow down visual when speed_factor < 1
+        delay_ms = max(0, int(16 * (1.0 / max(self.speed_factor, 0.125) - 1))) if self.speed_factor < 1.0 else 0
+
+        for i in range(n):
             # Pause: keep rendering but don't advance simulation
             while self.paused and self._gui and not self.gui_closed:
                 self._gui.update()
             self.update()
             if self.completed or self.gui_closed:
                 return
+            if self._gui and (i % render_every == 0 or i == n - 1):
+                self._gui.update()
+                if delay_ms:
+                    pygame.time.delay(delay_ms)
 
     def _update_signals(self) -> None:
         """ Updates all the simulation traffic signals and updates the gui, if exists """

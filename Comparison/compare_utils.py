@@ -13,9 +13,13 @@ from ReinforcementLearning.q_learning_utils import get_q_values
 from DefaultCycles.default_cycles_utils import fixed_cycle_action, longest_queue_action
 from Logic.logic_utils import logic_action
 from MathModel.math_utils import math_action
+from MathModel.network_utils import network_math_action
+from MathModel.grid_network_utils import grid_math_action
 from Search.search import sim_run as search_sim_run
 from Search.mcts import mcts_sim_run
 from TrafficSimulator.Setups.two_way_intersection import two_way_intersection_setup
+from ReinforcementLearning.network_environment import NetworkEnvironment
+from ReinforcementLearning.grid_environment import GridEnvironment
 
 # Q-Learning hyperparameters (must match training)
 ALPHA, EPSILON, DISCOUNT = 0.1, 0.0, 0.6   # epsilon=0 for evaluation
@@ -67,6 +71,8 @@ def compare_all(n_episodes: int) -> None:
         ('qlearning', 'Q-Learning',          lambda: _run_ql(q_agent, n_episodes)),
         ('search',    'Genetic Algorithm',   lambda: _run_search(n_episodes)),
         ('mcts',      'MCTS',                lambda: _run_mcts(n_episodes)),
+        ('network',   'Network Math (2-int)',lambda: _run_network(n_episodes)),
+        ('grid',      'Grid Math (2x2)',     lambda: _run_grid(n_episodes)),
     ]
 
     results = {}
@@ -143,6 +149,56 @@ def _run_mcts(n_episodes):
     return wait_times, collisions
 
 
+def _run_network(n_episodes):
+    env = NetworkEnvironment()
+    wait_times = []
+    collisions = 0
+    for ep in range(1, n_episodes + 1):
+        state = env.reset(render=False)
+        env.sim.dashboard_info.update({
+            'method': 'network', 'episode': ep,
+            'total_episodes': n_episodes, 'collisions': collisions,
+        })
+        collision_detected = 0
+        done = False
+        while not done:
+            action = network_math_action(env.sim, state)
+            state, _, done, truncated = env.step(action)
+            if truncated:
+                break
+            collision_detected += env.sim.collision_detected
+        if collision_detected:
+            collisions += 1
+        else:
+            wait_times.append(env.sim.current_average_wait_time)
+    return wait_times, collisions
+
+
+def _run_grid(n_episodes):
+    env = GridEnvironment()
+    wait_times = []
+    collisions = 0
+    for ep in range(1, n_episodes + 1):
+        state = env.reset(render=False)
+        env.sim.dashboard_info.update({
+            'method': 'grid', 'episode': ep,
+            'total_episodes': n_episodes, 'collisions': collisions,
+        })
+        collision_detected = 0
+        done = False
+        while not done:
+            action = grid_math_action(env.sim, state)
+            state, _, done, truncated = env.step(action)
+            if truncated:
+                break
+            collision_detected += env.sim.collision_detected
+        if collision_detected:
+            collisions += 1
+        else:
+            wait_times.append(env.sim.current_average_wait_time)
+    return wait_times, collisions
+
+
 # ── Output helpers ────────────────────────────────────────────────────────────
 
 def _print_table(results: dict, n_episodes: int) -> None:
@@ -190,7 +246,7 @@ def _save_chart(results: dict, n_episodes: int, timestamp: str) -> None:
         stds    = [statistics.stdev(d['wait_times']) if len(d['wait_times']) > 1 else 0
                    for d in results.values()]
         colors  = ['#4e9af1', '#f18f4e', '#4ef18f', '#f14e6e',
-                   '#b44ef1', '#f1e44e', '#4ef1e4']
+                   '#b44ef1', '#f1e44e', '#4ef1e4', '#e44e4e', '#4ef1a1']
 
         fig, axes = plt.subplots(1, 2, figsize=(14, 6))
         fig.suptitle(f'AI Traffic Controller — Method Comparison ({n_episodes} episodes)',
